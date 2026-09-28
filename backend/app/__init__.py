@@ -1,0 +1,1 @@
+"""Equipment inventory API."""
