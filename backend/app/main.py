@@ -1,7 +1,11 @@
 import asyncio
+import json
 import logging
+import re
+import time
 from contextlib import asynccontextmanager
 from typing import Literal
+from uuid import uuid4
 
 import psycopg
 from fastapi import FastAPI
@@ -10,6 +14,8 @@ from pydantic import BaseModel
 
 from app.config import get_settings
 from app.db import engine
+from app.errors import error_response, install_handlers
+from app.routes import router
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +27,36 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Учёт оборудования", version="0.1.0", lifespan=lifespan)
+app.include_router(router)
+install_handlers(app)
+
+
+@app.middleware("http")
+async def request_context(request, call_next):
+    candidate = request.headers.get("x-request-id", "")
+    request.state.request_id = (
+        candidate if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", candidate) else uuid4().hex
+    )
+    started = time.monotonic()
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        logger.error("Unhandled request error (%s)", type(exc).__name__)
+        response = error_response(request, 500, "internal_error", "Внутренняя ошибка сервера")
+    response.headers["X-Request-ID"] = request.state.request_id
+    route = request.scope.get("route")
+    logging.getLogger("uvicorn.error").info(
+        json.dumps(
+            {
+                "request_id": request.state.request_id,
+                "method": request.method,
+                "route": getattr(route, "path", "unmatched"),
+                "status": response.status_code,
+                "duration_ms": round((time.monotonic() - started) * 1000, 2),
+            }
+        )
+    )
+    return response
 
 
 class Status(BaseModel):
