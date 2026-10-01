@@ -1,5 +1,6 @@
 import logging
 
+import psycopg
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -56,7 +57,10 @@ def install_handlers(app):
         }
         if constraint in duplicates:
             code, message = duplicates[constraint]
-        elif getattr(exc.orig, "sqlstate", "") == "23503":
+        elif isinstance(
+            exc.orig,
+            (psycopg.errors.ForeignKeyViolation, psycopg.errors.RestrictViolation),
+        ):
             code, message = (
                 "resource_in_use",
                 "Запись связана с другими данными. Удаление невозможно",

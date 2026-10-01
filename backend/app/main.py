@@ -38,8 +38,21 @@ async def request_context(request, call_next):
         candidate if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", candidate) else uuid4().hex
     )
     started = time.monotonic()
+    content_length = request.headers.get("content-length")
     try:
-        response = await call_next(request)
+        if (
+            content_length
+            and content_length.isdecimal()
+            and int(content_length) > get_settings().max_request_body_bytes
+        ):
+            response = error_response(
+                request,
+                413,
+                "payload_too_large",
+                "Тело запроса превышает допустимый размер",
+            )
+        else:
+            response = await call_next(request)
     except Exception as exc:
         logger.error("Unhandled request error (%s)", type(exc).__name__)
         response = error_response(request, 500, "internal_error", "Внутренняя ошибка сервера")

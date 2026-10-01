@@ -90,7 +90,9 @@ def test_assignment_lifecycle_and_immutable_history(client, records):
         == 409
     )
     for resource in ("employees", "equipment"):
-        assert client.delete(f"/api/v1/{resource}/1").status_code == 409
+        response = client.delete(f"/api/v1/{resource}/1")
+        assert response.status_code == 409
+        assert response.json()["error"]["code"] == "resource_in_use"
 
 
 def test_search_filters_pagination_and_rollback(client, records):
