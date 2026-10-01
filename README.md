@@ -1,10 +1,9 @@
 # Учёт оборудования
 
-Учебное приложение для курса SRE Т-Академии: каталог физических экземпляров
+Учебное приложение: каталог физических экземпляров
 оборудования, сотрудники, выдача, возврат и неизменяемая история операций.
 
-Проект включает Vue 3 SPA, REST API на FastAPI и PostgreSQL 18. Он реализован
-как один репозиторий, конфигурируется через окружение и запускается в Docker Compose.
+Проект включает Vue 3 SPA, REST API на FastAPI и PostgreSQL 18. Он реализован как один репозиторий, конфигурируется через окружение и запускается в Docker Compose.
 Итоговая проверка требований и 12 Factor находится в
 [docs/compliance-audit.md](docs/compliance-audit.md).
 
@@ -20,8 +19,7 @@
 
 ## Быстрый запуск
 
-Нужны Docker Engine, Docker Compose v2 и `make`. Python и Node.js на хосте
-для обычного запуска не требуются.
+Нужны Docker Engine, Docker Compose v2 и `make`. Python и Node.js на хосте для обычного запуска не требуются.
 
 ```sh
 cp .env.example .env
@@ -39,17 +37,17 @@ volume PostgreSQL.
 
 ## Основные команды
 
-| Команда | Назначение |
-|---|---|
-| `make dev` / `make stop` | Запустить или остановить development-контур |
-| `make migrate` | Применить миграции отдельным процессом |
-| `make seed` | Создать или проверить синтетические данные |
-| `make test` | Запустить backend-тесты с PostgreSQL и Vitest |
-| `make test-e2e` | Запустить пять браузерных сценариев на порту 5174 |
-| `make lint` | Проверить Python, TypeScript и ESLint |
-| `make build` | Собрать development- и production-образы |
-| `make types` | Обновить TypeScript-типы из OpenAPI работающего API |
-| `make logs` | Читать журналы development-сервисов |
+| Команда                  | Назначение                                          |
+| ------------------------ | --------------------------------------------------- |
+| `make dev` / `make stop` | Запустить или остановить development-контур         |
+| `make migrate`           | Применить миграции отдельным процессом              |
+| `make seed`              | Создать или проверить синтетические данные          |
+| `make test`              | Запустить backend-тесты с PostgreSQL и Vitest       |
+| `make test-e2e`          | Запустить пять браузерных сценариев на порту 5174   |
+| `make lint`              | Проверить Python, TypeScript и ESLint               |
+| `make build`             | Собрать development- и production-образы            |
+| `make types`             | Обновить TypeScript-типы из OpenAPI работающего API |
+| `make logs`              | Читать журналы development-сервисов                 |
 
 Backend-тесты и e2e используют отдельную БД `equipment_test` в tmpfs и не
 подключаются к рабочему volume. Не запускайте эти два набора одновременно.
