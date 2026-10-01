@@ -54,5 +54,14 @@ export function itemLabel(item: Item): string {
   return item.name;
 }
 export function date(value: string | null) {
-  return value ? new Date(value).toLocaleDateString("ru-RU") : "—";
+  return value
+    ? new Intl.DateTimeFormat("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZoneName: "short",
+      }).format(new Date(value))
+    : "—";
 }
