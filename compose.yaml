@@ -20,6 +20,7 @@ x-backend: &backend
     DB_STATEMENT_TIMEOUT_MS: ${DB_STATEMENT_TIMEOUT_MS:-5000}
     READINESS_TIMEOUT: ${READINESS_TIMEOUT:-2}
     SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-20}
+    MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES:-32768}
   volumes:
     - ./backend/app:/app/app
     - ./backend/migrations:/app/migrations
@@ -28,6 +29,67 @@ x-backend: &backend
   init: true
 
 services:
+  db-test:
+    image: postgres:18.3-bookworm
+    profiles: [test]
+    environment:
+      POSTGRES_DB: equipment_test
+      POSTGRES_USER: equipment
+      POSTGRES_PASSWORD: test_only
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U equipment -d equipment_test']
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  test-api:
+    <<: *backend
+    profiles: [test]
+    environment: &test-db-env
+      <<: *backend-env
+      DB_HOST: db-test
+      DB_NAME: equipment_test
+      DB_USER: equipment
+      DB_PASSWORD: test_only
+    command: [sh, -c, 'alembic upgrade head && pytest']
+    depends_on:
+      db-test:
+        condition: service_healthy
+
+  test-migrate:
+    <<: *backend
+    profiles: [test]
+    environment: *test-db-env
+    command: [alembic, upgrade, head]
+    depends_on:
+      db-test:
+        condition: service_healthy
+
+  test-seed:
+    <<: *backend
+    profiles: [test]
+    environment: *test-db-env
+    command: [python, -m, app.seed]
+    depends_on:
+      test-migrate:
+        condition: service_completed_successfully
+
+  e2e-api:
+    <<: *backend
+    profiles: [test]
+    environment: *test-db-env
+    command: [python, -m, app.run]
+    depends_on:
+      test-seed:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 2s
+      timeout: 4s
+      retries: 15
+
   db:
     image: postgres:18.3-bookworm
     environment:
@@ -67,7 +129,7 @@ services:
       timeout: 4s
       retries: 12
 
-  web:
+  web: &web
     image: t-academy-equipment-web:dev
     build:
       context: ./frontend
@@ -89,6 +151,17 @@ services:
       interval: 5s
       timeout: 3s
       retries: 12
+
+  e2e-web:
+    <<: *web
+    profiles: [test]
+    environment:
+      API_PROXY_TARGET: http://e2e-api:8000
+    ports:
+      - '127.0.0.1:5174:5173'
+    depends_on:
+      e2e-api:
+        condition: service_healthy
 
 volumes:
   postgres_data:

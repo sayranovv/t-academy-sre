@@ -1,5 +1,6 @@
 from alembic import context
 
+from app import models  # noqa: F401 -- register metadata for autogeneration
 from app.db import Base, engine
 
 

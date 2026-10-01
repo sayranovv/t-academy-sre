@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 **/.venv/
 **/__pycache__/
 **/.pytest_cache/
@@ -10,4 +11,5 @@
 **/coverage/
 **/test-results/
 **/playwright-report/
+output/
 .DS_Store

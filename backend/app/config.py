@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     db_statement_timeout_ms: int = Field(default=5000, ge=1)
     readiness_timeout: float = Field(default=2, gt=0)
     shutdown_timeout: int = Field(default=20, ge=1)
+    max_request_body_bytes: int = Field(default=32768, ge=1024)
     log_level: str = "info"
     reload: bool = False
 
