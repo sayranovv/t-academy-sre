@@ -1,13 +1,14 @@
 import json
 import logging
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         event = {
-            "timestamp": datetime.fromtimestamp(
-                record.created, tz=UTC
-                ).isoformat(timespec="milliseconds"),
+            "timestamp": datetime.fromtimestamp(record.created, tz=UTC).isoformat(
+                timespec="milliseconds"
+            ),
             "level": record.levelname.lower(),
             "message": record.getMessage(),
             "service.name": "equipment-api",
@@ -24,6 +25,7 @@ class JsonFormatter(logging.Formatter):
                 event[field] = getattr(record, field)
 
         return json.dumps(event, ensure_ascii=False)
+
 
 def build_log_config(level: str) -> dict:
     return {
@@ -60,6 +62,6 @@ def build_log_config(level: str) -> dict:
                 "handlers": [],
                 "level": level.upper(),
                 "propagate": True,
-            }
-        }
+            },
+        },
     }
