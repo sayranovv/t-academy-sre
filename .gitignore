@@ -13,3 +13,6 @@
 **/playwright-report/
 output/
 .DS_Store
+_temp_commands.txt
+manifests/.history/
+/k8s/db-secret.yml
