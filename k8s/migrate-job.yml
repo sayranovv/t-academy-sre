@@ -1,0 +1,31 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 120
+  template:
+    spec:
+      containers:
+        - name: migrate
+          image: t-academy-equipment-api:0.1.0
+          command: ["alembic", "upgrade", "head"]
+          imagePullPolicy: Never
+          env:
+            - name: DB_HOST
+              value: "db"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "equipment"
+            - name: DB_USER
+              value: "equipment"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+      restartPolicy: Never
+...
