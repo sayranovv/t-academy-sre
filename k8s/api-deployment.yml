@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: api-container
-          image: t-academy-equipment-api:0.1.0
+          image: t-academy-equipment-api:0.1.2
           imagePullPolicy: Never
           ports:
             - containerPort: 8000

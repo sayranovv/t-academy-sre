@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import re
 import time
@@ -58,17 +57,14 @@ async def request_context(request, call_next):
         response = error_response(request, 500, "internal_error", "Внутренняя ошибка сервера")
     response.headers["X-Request-ID"] = request.state.request_id
     route = request.scope.get("route")
-    logging.getLogger("uvicorn.error").info(
-        json.dumps(
-            {
-                "request_id": request.state.request_id,
-                "method": request.method,
-                "route": getattr(route, "path", "unmatched"),
-                "status": response.status_code,
-                "duration_ms": round((time.monotonic() - started) * 1000, 2),
-            }
-        )
-    )
+    logging.info("HTTP request completed", extra={
+        "request_id": request.state.request_id,
+        "method": request.method,
+        "route": getattr(route, "path", "unmatched"),
+        "status": response.status_code,
+        "duration_ms": round((time.monotonic() - started) * 1000, 2),
+    })
+
     return response
 
 

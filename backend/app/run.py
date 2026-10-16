@@ -1,6 +1,7 @@
 import uvicorn
 
 from app.config import get_settings
+from app.logging_config import build_log_config
 
 if __name__ == "__main__":
     settings = get_settings()
@@ -13,4 +14,5 @@ if __name__ == "__main__":
         log_level=settings.log_level,
         access_log=False,
         timeout_graceful_shutdown=settings.shutdown_timeout,
+        log_config=build_log_config(settings.log_level),
     )
