@@ -1,0 +1,69 @@
+# ДЗ 2. Две одинаковые реплики backend; долговечные данные находятся в общей PostgreSQL.
+# Deployment управляет ReplicaSet, а тот поддерживает нужное число Pod.
+# Service api находит эти Pod по метке app: api (см. api-service.yml).
+# В текущем исходнике нет readiness/liveness probes и requests/limits API.
+# Health endpoints в коде сами по себе не подключают проверки Kubernetes.
+# Тег API 0.1.4 отличается от тега Job миграций 0.1.0; значения сохранены как в оригинале.
+# Источник: k8s/api-deployment.yml
+
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: apps/v1
+# Тип ресурса Kubernetes.
+kind: Deployment
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: api-deployment
+  # Метки для поиска и связывания объектов; это не сетевые адреса.
+  labels:
+    app: api
+# Желаемая конфигурация объекта.
+spec:
+  # Сколько Pod контроллер должен поддерживать; это не число узлов.
+  replicas: 2
+  # Выбор Pod по меткам. Должен соответствовать labels целевых Pod.
+  selector:
+    # Все указанные пары ключ/значение должны совпасть с метками Pod.
+    matchLabels:
+      app: api
+  # Шаблон будущих Pod: здесь их metadata и spec.
+  template:
+    # Имя, namespace и метки самого объекта.
+    metadata:
+      # Метки для поиска и связывания объектов; это не сетевые адреса.
+      labels:
+        app: api
+      # Дополнительные метаданные; prometheus.io/* используются настроенным сборщиком метрик.
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    # Желаемая конфигурация объекта.
+    spec:
+      # Контейнеры одного Pod: общая сеть, отдельные процессы и файловые системы.
+      containers:
+        - name: api-container
+          # Образ с кодом/программой и тегом версии.
+          image: t-academy-equipment-api:0.1.4
+          # Never: использовать только локальный образ узла minikube; если его нет, запуск не состоится.
+          imagePullPolicy: Never
+          # Порты: у контейнера декларация, у Service правила направления трафика.
+          ports:
+            # Порт, который должен слушать процесс; сам по себе не публикуется на хост.
+            - containerPort: 8000
+          # Переменные окружения процесса контейнера.
+          env:
+            - name: DB_HOST
+              value: "db"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "equipment"
+            - name: DB_USER
+              value: "equipment"
+            - name: DB_PASSWORD
+              # Взять значение из другого источника, а не записывать его здесь.
+              valueFrom:
+                # Получить значение ключа из Secret того же namespace.
+                secretKeyRef:
+                  name: db-secret
+                  key: password

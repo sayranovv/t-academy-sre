@@ -1,0 +1,54 @@
+# ДЗ 2 + фактор Admin processes. Одноразовая задача изменения схемы БД.
+# Использует код Alembic из образа API, завершается после alembic upgrade head.
+# Сначала готовится БД, затем успешно выполняются миграции, затем запускается API.
+# Само наличие Job не заставляет Deployment ждать её: порядок задаёт процедура развёртывания.
+# Тег здесь 0.1.0, у API 0.1.4; для согласованного релиза их следует синхронизировать.
+# Источник: k8s/migrate-job.yml
+
+---
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: batch/v1
+# Тип ресурса Kubernetes.
+kind: Job
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: db-migrate
+# Желаемая конфигурация объекта.
+spec:
+  # Лимит повторных попыток Job после сбоев.
+  backoffLimit: 2
+  # Максимальная общая длительность выполнения Job в секундах.
+  activeDeadlineSeconds: 120
+  # Шаблон будущих Pod: здесь их metadata и spec.
+  template:
+    # Желаемая конфигурация объекта.
+    spec:
+      # Контейнеры одного Pod: общая сеть, отдельные процессы и файловые системы.
+      containers:
+        - name: migrate
+          # Образ с кодом/программой и тегом версии.
+          image: t-academy-equipment-api:0.1.0
+          # Команда процесса вместо штатной команды запуска образа.
+          command: ["alembic", "upgrade", "head"]
+          # Never: использовать только локальный образ узла minikube; если его нет, запуск не состоится.
+          imagePullPolicy: Never
+          # Переменные окружения процесса контейнера.
+          env:
+            - name: DB_HOST
+              value: "db"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "equipment"
+            - name: DB_USER
+              value: "equipment"
+            - name: DB_PASSWORD
+              # Взять значение из другого источника, а не записывать его здесь.
+              valueFrom:
+                # Получить значение ключа из Secret того же namespace.
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+      # Never: kubelet не перезапускает завершившийся контейнер; Job может создать новый Pod.
+      restartPolicy: Never
+...

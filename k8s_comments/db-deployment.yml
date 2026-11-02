@@ -1,0 +1,104 @@
+# ДЗ 2. Одна PostgreSQL с постоянным томом db-pvc.
+# Recreate при обновлении сначала удаляет старый Pod, затем создаёт новый.
+# Увеличение replicas не настраивает репликацию PostgreSQL.
+# В текущем файле уже есть второй контейнер postgres-exporter из работы по метрикам.
+# Контейнеры одного Pod разделяют сеть: exporter видит PostgreSQL на localhost:5432.
+# POSTGRES_* инициализируют новую БД; смена Secret не меняет автоматически пароль в существующей БД.
+# Источник: k8s/db-deployment.yml
+
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: apps/v1
+# Тип ресурса Kubernetes.
+kind: Deployment
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: db-deployment
+  # Метки для поиска и связывания объектов; это не сетевые адреса.
+  labels:
+    app: db
+# Желаемая конфигурация объекта.
+spec:
+  # Сколько Pod контроллер должен поддерживать; это не число узлов.
+  replicas: 1
+  # Как заменять Pod при обновлении Deployment.
+  strategy:
+    # Сначала удалить старые Pod, потом создать новые; возможен простой.
+    type: Recreate
+  # Выбор Pod по меткам. Должен соответствовать labels целевых Pod.
+  selector:
+    # Все указанные пары ключ/значение должны совпасть с метками Pod.
+    matchLabels:
+      app: db
+  # Шаблон будущих Pod: здесь их metadata и spec.
+  template:
+    # Имя, namespace и метки самого объекта.
+    metadata:
+      # Метки для поиска и связывания объектов; это не сетевые адреса.
+      labels:
+        app: db
+      # Дополнительные метаданные; prometheus.io/* используются настроенным сборщиком метрик.
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9187"
+        prometheus.io/path: "/metrics"
+    # Желаемая конфигурация объекта.
+    spec:
+      # Контейнеры одного Pod: общая сеть, отдельные процессы и файловые системы.
+      containers:
+        - name: postgres
+          # Образ с кодом/программой и тегом версии.
+          image: postgres:18.3-bookworm
+          # IfNotPresent: скачать образ, только если его ещё нет на узле.
+          imagePullPolicy: IfNotPresent
+          # Порты: у контейнера декларация, у Service правила направления трафика.
+          ports:
+            # Порт, который должен слушать процесс; сам по себе не публикуется на хост.
+            - containerPort: 5432
+          # Переменные окружения процесса контейнера.
+          env:
+            - name: POSTGRES_DB
+              value: "equipment"
+            - name: POSTGRES_USER
+              value: "equipment"
+            - name: POSTGRES_PASSWORD
+              # Взять значение из другого источника, а не записывать его здесь.
+              valueFrom:
+                # Получить значение ключа из Secret того же namespace.
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+          # Куда внутри этого контейнера подключить объявленные ниже volumes.
+          volumeMounts:
+            - name: db-data
+              # Путь внутри контейнера, где доступен том или файл.
+              mountPath: /var/lib/postgresql
+        - name: postgres-exporter
+          # Образ с кодом/программой и тегом версии.
+          image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
+          # IfNotPresent: скачать образ, только если его ещё нет на узле.
+          imagePullPolicy: IfNotPresent
+          # Порты: у контейнера декларация, у Service правила направления трафика.
+          ports:
+            - name: metrics
+              # Порт, который должен слушать процесс; сам по себе не публикуется на хост.
+              containerPort: 9187
+          # Переменные окружения процесса контейнера.
+          env:
+            - name: DATA_SOURCE_URI
+              value: "localhost:5432/equipment?sslmode=disable"
+            - name: DATA_SOURCE_USER
+              value: "equipment"
+            - name: DATA_SOURCE_PASS
+              # Взять значение из другого источника, а не записывать его здесь.
+              valueFrom:
+                # Получить значение ключа из Secret того же namespace.
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+      # Источники томов Pod; name связывает volume с volumeMounts.
+      volumes:
+        - name: db-data
+          # Использовать постоянный том через уже существующую заявку PVC.
+          persistentVolumeClaim:
+            # Имя PVC в namespace этого Pod.
+            claimName: db-pvc

@@ -1,0 +1,81 @@
+# ДЗ 3. Конвейер Vector: sources → transforms → sinks.
+# Ниже vector.yaml — строка с отдельным YAML-конфигом Vector; её содержимое не изменено.
+# data_dir: каталог checkpoints/служебного состояния агента.
+# sources.app_logs: kubernetes_logs читает логи Pod текущего узла.
+# self_node_name берётся из env VECTOR_SELF_NODE_NAME, заданного через Downward API в DaemonSet.
+# extra_field_selector оставляет namespace default; extra_label_selector — только api и web.
+# PostgreSQL этим источником не собирается.
+# transforms.parse_application_json: remap выполняет программу VRL.
+# parse_json(.message) пытается разобрать сообщение контейнера как JSON.
+# merge объединяет поля события с метаданными; JSON получает log_format=json.
+# Неразобранный текст сохраняется с log_format=text и level=unknown.
+# Если service.name отсутствует, он определяется по метке app.
+# sinks.victoria_logs использует Elasticsearch-совместимый протокол; сам Elasticsearch не нужен.
+# inputs связывает выход предыдущего этапа со входом следующего.
+# endpoints содержит Service VictoriaLogs и путь приёма /insert/elasticsearch/.
+# compression=gzip сжимает передачу; healthcheck.enabled=false отключает эту проверку sink.
+# _msg_field=message и _time_field=timestamp задают поля сообщения и времени в VictoriaLogs.
+# _stream_fields задаёт идентичность потока: сервис, namespace, Pod и контейнер.
+# request_id остаётся обычным полем, чтобы не создавать поток на каждый запрос.
+# Дисковый buffer sink явно не настроен: checkpoints не доказывают доставку без потерь.
+# Источник: k8s/logging/vector-configmap.yml
+
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: v1
+# Тип ресурса Kubernetes.
+kind: ConfigMap
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: vector-config
+  # Пространство имён этого ресурса.
+  namespace: logging
+data:
+  vector.yaml: |
+    data_dir: /var/lib/vector
+
+    sources:
+      app_logs:
+        type: kubernetes_logs
+        self_node_name: "${VECTOR_SELF_NODE_NAME}"
+        extra_field_selector: "metadata.namespace=default"
+        extra_label_selector: "app in (api,web)"
+
+    transforms:
+      parse_application_json:
+        type: remap
+        inputs:
+          - app_logs
+        source: |
+          parsed, err = parse_json(.message)
+
+          if err == null && is_object(parsed) {
+            . = merge(., object!(parsed))
+            .log_format = "json"
+          } else {
+            .log_format = "text"
+            .level = "unknown"
+          }
+
+          if !exists(."service.name") {
+            if .kubernetes.pod_labels.app == "api" {
+              ."service.name" = "equipment-api"
+            } else {
+              ."service.name" = "equipment-web"
+            }
+          }
+
+    sinks:
+      victoria_logs:
+        type: elasticsearch
+        inputs:
+          - parse_application_json
+        endpoints:
+          - http://victoria-logs.logging.svc.cluster.local:9428/insert/elasticsearch/
+        api_version: v8
+        compression: gzip
+        healthcheck:
+          enabled: false
+        query:
+          _msg_field: message
+          _time_field: timestamp
+          _stream_fields: service.name,kubernetes.pod_namespace,kubernetes.pod_name,kubernetes.container_name

@@ -1,0 +1,59 @@
+# ДЗ 3. Три YAML-документа: ServiceAccount, ClusterRole и ClusterRoleBinding.
+# ServiceAccount — идентичность Pod Vector для Kubernetes API.
+# ClusterRole разрешает list/watch Pod, namespaces и nodes для получения метаданных.
+# ClusterRoleBinding связывает эти права с аккаунтом vector в namespace logging.
+# Кластерные права чтения метаданных не равны правам чтения файлов: файлы доступны через hostPath.
+# Фильтры источника в ConfigMap ограничивают сбор, но не сужают сами RBAC-права.
+# Источник: k8s/logging/vector-rbac.yml
+
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: v1
+# Тип ресурса Kubernetes.
+kind: ServiceAccount
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: vector
+  # Пространство имён этого ресурса.
+  namespace: logging
+---
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: rbac.authorization.k8s.io/v1
+# Тип ресурса Kubernetes.
+kind: ClusterRole
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: equipment-vector-reader
+# Правила разрешённых обращений к Kubernetes API.
+rules:
+  # Пустая строка обозначает core API group (pods, namespaces, nodes).
+  - apiGroups: [""]
+    # Для контейнера — CPU/память; для PVC — ёмкость хранилища.
+    resources:
+      - pods
+      - namespaces
+      - nodes
+    # Разрешённые действия: list — список, watch — поток изменений.
+    verbs:
+      - list
+      - watch
+---
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: rbac.authorization.k8s.io/v1
+# Тип ресурса Kubernetes.
+kind: ClusterRoleBinding
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: equipment-vector-reader
+# Кому выдаются права.
+subjects:
+  # Тип ресурса Kubernetes.
+  - kind: ServiceAccount
+    name: vector
+    # Пространство имён этого ресурса.
+    namespace: logging
+# Какая роль с разрешениями выдаётся перечисленным субъектам.
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  # Тип ресурса Kubernetes.
+  kind: ClusterRole
+  name: equipment-vector-reader

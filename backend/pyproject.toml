@@ -12,6 +12,8 @@ dependencies = [
   "psycopg[binary]>=3.2,<4",
   "alembic>=1.15,<2",
   "uvicorn[standard]>=0.34,<1",
+  "prometheus-fastapi-instrumentator>=8.1.0",
+  "prometheus-client>=0.26.0",
 ]
 
 [dependency-groups]

@@ -1,0 +1,62 @@
+# ДЗ 2. Pod Nginx отдаёт собранный Vue и проксирует /api/v1 в API.
+# Node.js использовался при сборке frontend; в production работает Nginx.
+# Конфигурация берётся из web-configmap.yml и подключается через subPath.
+# После изменения ConfigMap для этого subPath нужна замена Pod.
+# Источник: k8s/web-deployment.yml
+
+---
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: apps/v1
+# Тип ресурса Kubernetes.
+kind: Deployment
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: web-deployment
+  # Метки для поиска и связывания объектов; это не сетевые адреса.
+  labels:
+    app: web
+# Желаемая конфигурация объекта.
+spec:
+  # Сколько Pod контроллер должен поддерживать; это не число узлов.
+  replicas: 1
+  # Выбор Pod по меткам. Должен соответствовать labels целевых Pod.
+  selector:
+    # Все указанные пары ключ/значение должны совпасть с метками Pod.
+    matchLabels:
+      app: web
+  # Шаблон будущих Pod: здесь их metadata и spec.
+  template:
+    # Имя, namespace и метки самого объекта.
+    metadata:
+      # Метки для поиска и связывания объектов; это не сетевые адреса.
+      labels:
+        app: web
+    # Желаемая конфигурация объекта.
+    spec:
+      # Контейнеры одного Pod: общая сеть, отдельные процессы и файловые системы.
+      containers:
+        - name: web
+          # Образ с кодом/программой и тегом версии.
+          image: t-academy-equipment-web:0.1.0
+          # Never: использовать только локальный образ узла minikube; если его нет, запуск не состоится.
+          imagePullPolicy: Never
+          # Порты: у контейнера декларация, у Service правила направления трафика.
+          ports:
+            # Порт, который должен слушать процесс; сам по себе не публикуется на хост.
+            - containerPort: 8080
+          # Куда внутри этого контейнера подключить объявленные ниже volumes.
+          volumeMounts:
+            - name: nginx-config
+              # Путь внутри контейнера, где доступен том или файл.
+              mountPath: /etc/nginx/nginx.conf
+              # Подключить отдельный файл/подкаталог; ConfigMap при таком mount не обновляется автоматически.
+              subPath: nginx.conf
+              # Запретить запись через это подключение.
+              readOnly: true
+      # Источники томов Pod; name связывает volume с volumeMounts.
+      volumes:
+        - name: nginx-config
+          # Взять содержимое из ConfigMap того же namespace.
+          configMap:
+            name: web-config
+...

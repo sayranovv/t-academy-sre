@@ -1,0 +1,118 @@
+# ДЗ 3. Vector — агент сбора, по одному Pod на каждом подходящем узле.
+# В однодовом minikube работает один экземпляр агента.
+# /var/log содержит файлы или ссылки контейнерных логов.
+# При Docker runtime ссылки могут вести в /var/lib/docker/containers: этот путь тоже смонтирован.
+# Оба каталога логов доступны только для чтения.
+# /var/lib/equipment-vector на узле хранит состояние чтения Vector; это не PVC и не backup.
+# Права Kubernetes API задаются ServiceAccount/RBAC отдельно от файловых mounts.
+# Источник: k8s/logging/vector-daemonset.yml
+
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: apps/v1
+# Тип ресурса Kubernetes.
+kind: DaemonSet
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: vector
+  # Пространство имён этого ресурса.
+  namespace: logging
+# Желаемая конфигурация объекта.
+spec:
+  # Выбор Pod по меткам. Должен соответствовать labels целевых Pod.
+  selector:
+    # Все указанные пары ключ/значение должны совпасть с метками Pod.
+    matchLabels:
+      app: vector
+  # Шаблон будущих Pod: здесь их metadata и spec.
+  template:
+    # Имя, namespace и метки самого объекта.
+    metadata:
+      # Метки для поиска и связывания объектов; это не сетевые адреса.
+      labels:
+        app: vector
+    # Желаемая конфигурация объекта.
+    spec:
+      # Аккаунт для запросов этого Pod к Kubernetes API; права см. vector-rbac.yml.
+      serviceAccountName: vector
+      # Контейнеры одного Pod: общая сеть, отдельные процессы и файловые системы.
+      containers:
+        - name: vector
+          # Образ с кодом/программой и тегом версии.
+          image: timberio/vector:0.59.0-distroless-libc
+          # IfNotPresent: скачать образ, только если его ещё нет на узле.
+          imagePullPolicy: IfNotPresent
+          args:
+            - --config
+            - /etc/vector/vector.yaml
+          # Переменные окружения процесса контейнера.
+          env:
+            - name: VECTOR_SELF_NODE_NAME
+              # Взять значение из другого источника, а не записывать его здесь.
+              valueFrom:
+                # Downward API: получить значение поля своего Pod.
+                fieldRef:
+                  # spec.nodeName — имя узла, на котором запущен этот Pod.
+                  fieldPath: spec.nodeName
+          # Настройки пользователя и привилегий контейнера.
+          securityContext:
+            # UID процесса; 0 здесь нужен агенту для доступа к файлам логов узла.
+            runAsUser: 0
+            # false запрещает процессу получать дополнительные привилегии.
+            allowPrivilegeEscalation: false
+            # Linux capabilities; drop ALL убирает дополнительные возможности.
+            capabilities:
+              drop:
+                - ALL
+          # Для контейнера — CPU/память; для PVC — ёмкость хранилища.
+          resources:
+            # Запрашиваемые ресурсы; контейнерные requests учитывает scheduler.
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            # Верхняя граница потребления; превышение memory limit может вызвать OOMKill.
+            limits:
+              memory: 512Mi
+          # Куда внутри этого контейнера подключить объявленные ниже volumes.
+          volumeMounts:
+            - name: config
+              # Путь внутри контейнера, где доступен том или файл.
+              mountPath: /etc/vector
+              # Запретить запись через это подключение.
+              readOnly: true
+            - name: logs
+              # Путь внутри контейнера, где доступен том или файл.
+              mountPath: /var/log
+              # Запретить запись через это подключение.
+              readOnly: true
+            - name: data
+              # Путь внутри контейнера, где доступен том или файл.
+              mountPath: /var/lib/vector
+            - name: docker-logs
+              # Путь внутри контейнера, где доступен том или файл.
+              mountPath: /var/lib/docker/containers
+              # Запретить запись через это подключение.
+              readOnly: true
+      # Источники томов Pod; name связывает volume с volumeMounts.
+      volumes:
+        - name: config
+          # Взять содержимое из ConfigMap того же namespace.
+          configMap:
+            name: vector-config
+        - name: logs
+          # Каталог узла, напрямую подключённый к Pod. Данные привязаны к этому узлу.
+          hostPath:
+            path: /var/log
+            # Каталог должен уже существовать на узле.
+            type: Directory
+        - name: data
+          # Каталог узла, напрямую подключённый к Pod. Данные привязаны к этому узлу.
+          hostPath:
+            path: /var/lib/equipment-vector
+            # Создать каталог на узле, если его ещё нет.
+            type: DirectoryOrCreate
+        - name: docker-logs
+          # Каталог узла, напрямую подключённый к Pod. Данные привязаны к этому узлу.
+          hostPath:
+            path: /var/lib/docker/containers
+            # Каталог должен уже существовать на узле.
+            type: Directory

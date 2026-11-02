@@ -1,0 +1,27 @@
+# ДЗ 2. Внутренний адрес frontend: web:8080.
+# Для браузера используется kubectl --context sre -n default port-forward svc/web 8080:8080.
+# Port-forward выбирает конкретный Pod через Service; это не публичный балансировщик.
+# Источник: k8s/web-service.yml
+
+---
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: v1
+# Тип ресурса Kubernetes.
+kind: Service
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: web
+# Желаемая конфигурация объекта.
+spec:
+  # Порты: у контейнера декларация, у Service правила направления трафика.
+  ports:
+    # Порт Service, к которому обращаются клиенты внутри кластера.
+    - port: 8080
+      # Порт или имя порта целевого контейнера.
+      targetPort: 8080
+  # Выбор Pod по меткам. Должен соответствовать labels целевых Pod.
+  selector:
+    app: web
+  # Внутренний адрес кластера; доступ с ноутбука здесь через port-forward.
+  type: ClusterIP
+...

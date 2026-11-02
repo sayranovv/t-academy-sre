@@ -1,0 +1,29 @@
+# ДЗ 3. Постоянный внутренний адрес VictoriaLogs.
+# Vector отправляет данные на victoria-logs.logging.svc.cluster.local:9428.
+# Для UI: kubectl --context sre -n logging port-forward svc/victoria-logs 9428:9428.
+# В отчёте UI открыт по http://localhost:9428/select/vmui/.
+# Источник: k8s/logging/service.yml
+
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: v1
+# Тип ресурса Kubernetes.
+kind: Service
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: victoria-logs
+  # Пространство имён этого ресурса.
+  namespace: logging
+# Желаемая конфигурация объекта.
+spec:
+  # Внутренний адрес кластера; доступ с ноутбука здесь через port-forward.
+  type: ClusterIP
+  # Выбор Pod по меткам. Должен соответствовать labels целевых Pod.
+  selector:
+    app: victoria-logs
+  # Порты: у контейнера декларация, у Service правила направления трафика.
+  ports:
+    - name: http
+      # Порт Service, к которому обращаются клиенты внутри кластера.
+      port: 9428
+      # Порт или имя порта целевого контейнера.
+      targetPort: http

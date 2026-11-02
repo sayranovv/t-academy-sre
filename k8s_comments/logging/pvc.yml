@@ -1,0 +1,27 @@
+# ДЗ 3. Постоянное хранилище логов VictoriaLogs, отдельное от PVC PostgreSQL.
+# 1 GiB — запрошенная ёмкость, 7 дней retention задаются в deployment.yml.
+# Retention не гарантирует, что диска хватит при любой интенсивности логов.
+# Замена Pod с тем же сохранным томом позволяет продолжить чтение прежних записей.
+# Источник: k8s/logging/pvc.yml
+
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: v1
+# Тип ресурса Kubernetes.
+kind: PersistentVolumeClaim
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: victoria-logs-data
+  # Пространство имён этого ресурса.
+  namespace: logging
+# Желаемая конфигурация объекта.
+spec:
+  # Режим доступа к запрашиваемому хранилищу.
+  accessModes:
+    # Запись с одного узла; это не строгая гарантия одного Pod и не репликация данных.
+    - ReadWriteOnce
+  # Для контейнера — CPU/память; для PVC — ёмкость хранилища.
+  resources:
+    # Запрашиваемые ресурсы; контейнерные requests учитывает scheduler.
+    requests:
+      # Запрашиваемая ёмкость тома (Gi — гибибайты).
+      storage: 1Gi
