@@ -1,0 +1,17 @@
+# Дополнение из работы по метрикам; не часть основной схемы ДЗ 2–3.
+# Это values для Helm-chart, а не самостоятельный Kubernetes-манифест.
+# Его нельзя применить напрямую как Deployment через kubectl apply.
+# VictoriaMetrics хранит метрики; VictoriaLogs в соседнем logging — логи.
+# retentionPeriod: срок хранения; persistentVolume: постоянный том; scrape: включение сбора.
+# Точная интерпретация values зависит от chart и его версии.
+# Источник: k8s/monitoring/victoria-metrics-values.yml
+
+server:
+  retentionPeriod: "7d"
+
+  persistentVolume:
+    enabled: true
+    size: 1Gi
+
+  scrape:
+    enabled: true

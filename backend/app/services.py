@@ -1,8 +1,18 @@
 from sqlalchemy import func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app import models as m
 from app import schemas as s
+from app.metrics import (
+    EMPLOYEES_CREATED,
+    EQUIPMENT_ASSIGNMENTS,
+    EQUIPMENT_ASSIGNMENTS_FAILS,
+    EQUIPMENT_CREATED,
+    EQUIPMENT_CREATED_FAILS,
+    EQUIPMENT_RETURNS,
+    EQUIPMENT_RETURNS_FAILS,
+)
 
 
 class DomainError(Exception):
@@ -151,13 +161,24 @@ def validate_references(db, values):
 
 def create_record(db, resource, body):
     entity, _ = ENTITIES[resource]
-    with db.begin():
-        values = body.model_dump()
-        validate_references(db, values)
-        row = entity(**values)
-        db.add(row)
-        db.flush()
-        result = read_record(db, resource, row.id)
+    try:
+        with db.begin():
+            values = body.model_dump()
+            validate_references(db, values)
+            row = entity(**values)
+            db.add(row)
+            db.flush()
+            result = read_record(db, resource, row.id)
+    except DomainError, IntegrityError:
+        raise
+    except Exception:
+        if resource == "equipment":
+            EQUIPMENT_CREATED_FAILS.inc()
+        raise
+    if resource == "equipment":
+        EQUIPMENT_CREATED.inc()
+    elif resource == "employees":
+        EMPLOYEES_CREATED.inc()
     return result
 
 
@@ -204,42 +225,58 @@ def delete_record(db, resource, id):
 
 
 def issue(db: Session, body: s.AssignmentCreate):
-    with db.begin():
-        employee = require(db, m.Employee, body.employee_id, lock=True)
-        equipment = require(db, m.Equipment, body.equipment_id, lock=True)
-        if not employee.is_active:
-            raise DomainError("employee_inactive", "Сотрудник неактивен")
-        if equipment.operational_state != "usable":
-            raise DomainError("equipment_unavailable", "Оборудование недоступно для выдачи")
-        if has_assignments(db, m.Assignment.equipment_id, equipment.id, open_only=True):
-            raise DomainError("equipment_already_assigned", "Оборудование уже выдано")
-        now = db.scalar(select(func.clock_timestamp()))
-        previous_return = db.scalar(
-            select(func.max(m.Assignment.returned_at)).where(
-                m.Assignment.equipment_id == equipment.id
+    try:
+        with db.begin():
+            employee = require(db, m.Employee, body.employee_id, lock=True)
+            equipment = require(db, m.Equipment, body.equipment_id, lock=True)
+            if not employee.is_active:
+                raise DomainError("employee_inactive", "Сотрудник неактивен")
+            if equipment.operational_state != "usable":
+                raise DomainError("equipment_unavailable", "Оборудование недоступно для выдачи")
+            if has_assignments(db, m.Assignment.equipment_id, equipment.id, open_only=True):
+                raise DomainError("equipment_already_assigned", "Оборудование уже выдано")
+            now = db.scalar(select(func.clock_timestamp()))
+            previous_return = db.scalar(
+                select(func.max(m.Assignment.returned_at)).where(
+                    m.Assignment.equipment_id == equipment.id
+                )
             )
-        )
-        assignment = m.Assignment(
-            **body.model_dump(),
-            issued_at=max(now, previous_return or now),
-        )
-        db.add(assignment)
-        db.flush()
-        result = read_record(db, "assignments", assignment.id)
+            assignment = m.Assignment(
+                **body.model_dump(),
+                issued_at=max(now, previous_return or now),
+            )
+            db.add(assignment)
+            db.flush()
+            result = read_record(db, "assignments", assignment.id)
+    except DomainError, IntegrityError:
+        raise
+    except Exception:
+        EQUIPMENT_ASSIGNMENTS_FAILS.inc()
+        raise
+    EQUIPMENT_ASSIGNMENTS.inc()
     return result
 
 
 def return_equipment(db: Session, id: int, body: s.ReturnInput):
-    with db.begin():
-        # Read only immutable FKs before locking. Refresh the assignment under lock below.
-        assignment = require(db, m.Assignment, id)
-        require(db, m.Employee, assignment.employee_id, lock=True)
-        require(db, m.Equipment, assignment.equipment_id, lock=True)
-        assignment = require(db, m.Assignment, id, lock=True)
-        if assignment.returned_at is None:
-            now = db.scalar(select(func.clock_timestamp()))
-            assignment.returned_at = max(now, assignment.issued_at)
-            assignment.return_note = body.return_note
-            db.flush()
-        result = read_record(db, "assignments", id)
+    was_returned = False
+    try:
+        with db.begin():
+            assignment = require(db, m.Assignment, id)
+            require(db, m.Employee, assignment.employee_id, lock=True)
+            require(db, m.Equipment, assignment.equipment_id, lock=True)
+            assignment = require(db, m.Assignment, id, lock=True)
+            if assignment.returned_at is None:
+                now = db.scalar(select(func.clock_timestamp()))
+                assignment.returned_at = max(now, assignment.issued_at)
+                assignment.return_note = body.return_note
+                db.flush()
+                was_returned = True
+            result = read_record(db, "assignments", id)
+    except DomainError, IntegrityError:
+        raise
+    except Exception:
+        EQUIPMENT_RETURNS_FAILS.inc()
+        raise
+    if was_returned:
+        EQUIPMENT_RETURNS.inc()
     return result

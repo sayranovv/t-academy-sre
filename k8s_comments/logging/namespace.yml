@@ -1,0 +1,12 @@
+# ДЗ 3. Отдельный namespace logging для хранилища и агента.
+# Namespace логически группирует ресурсы; сам по себе не запрещает сетевые соединения.
+# Приложение остаётся в default, агент собирает логи оттуда.
+# Источник: k8s/logging/namespace.yml
+
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: v1
+# Тип ресурса Kubernetes.
+kind: Namespace
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: logging

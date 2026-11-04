@@ -16,3 +16,4 @@ output/
 _temp_commands.txt
 manifests/.history/
 /k8s/db-secret.yml
+*.mov

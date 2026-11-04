@@ -1,0 +1,74 @@
+# ДЗ 3. Single-node VictoriaLogs: принимает, хранит и ищет логи.
+# Одна реплика, HTTP-порт 9428, данные на PVC victoria-logs-data.
+# Recreate избегает обычного перекрытия старого и нового Pod при обновлении.
+# -storageDataPath указывает каталог данных; -retentionPeriod=7d — срок хранения 7 дней.
+# Одна реплика с локальным томом не делает хранилище высокодоступным.
+# Источник: k8s/logging/deployment.yml
+
+# Версия API Kubernetes для данного типа объекта.
+apiVersion: apps/v1
+# Тип ресурса Kubernetes.
+kind: Deployment
+# Имя, namespace и метки самого объекта.
+metadata:
+  name: victoria-logs
+  # Пространство имён этого ресурса.
+  namespace: logging
+# Желаемая конфигурация объекта.
+spec:
+  # Сколько Pod контроллер должен поддерживать; это не число узлов.
+  replicas: 1
+  # Как заменять Pod при обновлении Deployment.
+  strategy:
+    # Сначала удалить старые Pod, потом создать новые; возможен простой.
+    type: Recreate
+  # Выбор Pod по меткам. Должен соответствовать labels целевых Pod.
+  selector:
+    # Все указанные пары ключ/значение должны совпасть с метками Pod.
+    matchLabels:
+      app: victoria-logs
+  # Шаблон будущих Pod: здесь их metadata и spec.
+  template:
+    # Имя, namespace и метки самого объекта.
+    metadata:
+      # Метки для поиска и связывания объектов; это не сетевые адреса.
+      labels:
+        app: victoria-logs
+    # Желаемая конфигурация объекта.
+    spec:
+      # Контейнеры одного Pod: общая сеть, отдельные процессы и файловые системы.
+      containers:
+        - name: victoria-logs
+          # Образ с кодом/программой и тегом версии.
+          image: victoriametrics/victoria-logs:v1.53.0
+          # IfNotPresent: скачать образ, только если его ещё нет на узле.
+          imagePullPolicy: IfNotPresent
+          args:
+            - -storageDataPath=/victoria-logs-data
+            - -retentionPeriod=7d
+          # Порты: у контейнера декларация, у Service правила направления трафика.
+          ports:
+            - name: http
+              # Порт, который должен слушать процесс; сам по себе не публикуется на хост.
+              containerPort: 9428
+          # Для контейнера — CPU/память; для PVC — ёмкость хранилища.
+          resources:
+            # Запрашиваемые ресурсы; контейнерные requests учитывает scheduler.
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            # Верхняя граница потребления; превышение memory limit может вызвать OOMKill.
+            limits:
+              memory: 512Mi
+          # Куда внутри этого контейнера подключить объявленные ниже volumes.
+          volumeMounts:
+            - name: data
+              # Путь внутри контейнера, где доступен том или файл.
+              mountPath: /victoria-logs-data
+      # Источники томов Pod; name связывает volume с volumeMounts.
+      volumes:
+        - name: data
+          # Использовать постоянный том через уже существующую заявку PVC.
+          persistentVolumeClaim:
+            # Имя PVC в namespace этого Pod.
+            claimName: victoria-logs-data

@@ -9,6 +9,7 @@ from uuid import uuid4
 import psycopg
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel
 
 from app.config import get_settings
@@ -28,6 +29,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Учёт оборудования", version="0.1.0", lifespan=lifespan)
 app.include_router(router)
 install_handlers(app)
+Instrumentator(
+    excluded_handlers=[r"^/metrics$"],
+).instrument(app).expose(app, include_in_schema=False)
 
 
 @app.middleware("http")

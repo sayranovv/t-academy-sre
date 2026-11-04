@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: equipment-prober
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: equipment-prober
+  template:
+    metadata:
+      labels:
+        app: equipment-prober
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9101"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: prober
+          image: t-academy-equipment-api:0.1.5
+          imagePullPolicy: Never
+          command: ["python", "-m", "app.prober"]
+          env:
+            - name: PROBE_TARGET_URL
+              value: "http://web:8080/health/ready"
+            - name: PROBE_INTERVAL_SECONDS
+              value: "30"
+            - name: PROBE_TIMEOUT_SECONDS
+              value: "5"
+            - name: PROBE_METRICS_PORT
+              value: "9101"
+          ports:
+            - name: metrics
+              containerPort: 9101
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: equipment-prober
+spec:
+  selector:
+    app: equipment-prober
+  ports:
+    - name: metrics
+      port: 9101
+      targetPort: metrics
