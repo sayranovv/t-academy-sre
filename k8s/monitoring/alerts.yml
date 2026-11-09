@@ -1,0 +1,45 @@
+groups:
+  - name: equipment-alerts
+    interval: 30s
+    rules:
+      - alert: EquipmentAssignmentFailures
+        expr: sum(increase(equipment_assignments_failures_total[5m])) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: equipment-api
+        annotations:
+          summary: "Технические ошибки выдачи оборудования"
+          description: "За последние 5 минут обнаружены технические ошибки выдачи. Проверьте API и подключение к PostgreSQL"
+      - alert: EquipmentReturnFailures
+        expr: sum(increase(equipment_returns_failures_total[5m])) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: equipment-api
+        annotations:
+          summary: "Технические ошибки возврата оборудования"
+          description: "За последние 5 минут обнаружены технические ошибки возврата. Проверьте API и подключение к PostgreSQL"
+      - alert: FastAPIHighServerErrorRate
+        expr: |
+          (
+            sum(increase(http_requests_total{
+              handler=~"/api/v1/.*",
+              status="5xx"
+            }[5m]))
+            /
+            sum(increase(http_requests_total{
+              handler=~"/api/v1/.*"
+            }[5m]))
+          ) > 0.05
+          and
+          sum(increase(http_requests_total{
+            handler=~"/api/v1/.*"
+          }[5m])) >= 20
+        for: 1m
+        labels:
+          severity: warning
+          service: equipment-api
+        annotations:
+          summary: "Высокая доля серверных ошибок FastAPI"
+          description: "Более 5% ответов API — HTTP 5xx за последние 5 минут при минимум 20 запросах. Условие сохраняется минуту"
