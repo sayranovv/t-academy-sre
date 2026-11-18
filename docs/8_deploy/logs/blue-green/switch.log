@@ -1,0 +1,5 @@
+Tue Nov 17 18:27:31 +05 2026
+NAME     READY   UP-TO-DATE   AVAILABLE   AGE
+api-v1   2/2     2            2           9m35s
+api-v2   2/2     2            2           9m35s
+httproute.gateway.networking.k8s.io/api-route configured

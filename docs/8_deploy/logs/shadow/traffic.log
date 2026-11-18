@@ -1,0 +1,200 @@
+
+Запрос: shadow-1794925308-1
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:48 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: 689b020f-013d-4122-afee-1a083368f5ec
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-2
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:49 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: a4dc7751-373c-489f-a929-734fe000c7a8
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-3
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:49 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: b5095996-9527-4567-8902-15c7495d6b4a
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-4
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:49 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: 1e721425-13c1-4422-b66d-c32885bc29a4
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-5
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:50 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: eafd6c7d-4348-48e4-a5c0-1d4e5dca75c6
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-6
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:51 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: 16bb1121-7d1d-4369-ab66-c30ea475d0db
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-7
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:51 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: 4b6e9a1c-715c-4770-8c9b-98207d7af40a
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-8
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:52 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: 90da3792-2a08-4557-a95f-97370556822e
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-9
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:52 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: 91293b45-f9ac-423b-a598-556be810de7f
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-10
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:53 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: cccd6559-68d8-461c-bb42-be115a06aab8
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-11
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:53 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: 39bf8156-d359-4848-8d17-75744de45b3a
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-12
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:54 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: a40a8df2-cd8b-43f1-9dcd-5de5d3449a58
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-13
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:55 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: cf036070-c895-4a88-87a9-866a6df5d449
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-14
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:55 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: 4904af3f-5ea3-46eb-8293-cf417c7fd8e6
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-15
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:55 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: f97dc728-95ba-4b07-b6f6-bb348c021eaa
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-16
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:56 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: 04af08ea-ea71-45ea-8b0b-86a518999334
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-17
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:56 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: e4646771-28e5-42ec-857a-ff8b7c1082e0
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-18
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:57 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: 110b052a-9c63-4493-85eb-69ec5c85d344
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-19
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:57 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: 91ab7fcd-1b89-4267-a14b-37c48a24343d
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
+
+Запрос: shadow-1794925308-20
+HTTP/1.1 200 OK
+date: Tue, 17 Nov 2026 14:21:58 GMT
+server: uvicorn
+content-length: 59
+content-type: application/json
+x-request-id: c69162e8-c489-4764-858c-ff697081fdc3
+
+{"service":"equipment-api","version":"0.1.0","status":"ok"}
