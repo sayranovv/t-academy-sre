@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     engine.dispose()
 
 
-app = FastAPI(title="Учёт оборудования", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Учёт оборудования", version="0.1.6", lifespan=lifespan)
 app.include_router(router)
 install_handlers(app)
 Instrumentator(
@@ -77,7 +77,7 @@ async def request_context(request, call_next):
 
 class Status(BaseModel):
     service: str = "equipment-api"
-    version: str = "0.1.0"
+    version: str = "0.1.6"
     status: Literal["ok"] = "ok"
 
 
